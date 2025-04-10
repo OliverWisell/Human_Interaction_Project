@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Quiz</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  </head>
+  <body>
+    <input id="name" placeholder="Skriv namn" />
+    <button onclick="join()">Join</button>
+    <ul id="messages"></ul>
+
+    <script>
+      const socket = io();
+
+      function join() {
+        const name = document.getElementById("name").value;
+        socket.emit("join", { name });
+      }
+
+      socket.on("welcome", data => {
+        const li = document.createElement("li");
+        li.textContent = data.msg;
+        document.getElementById("messages").appendChild(li);
+      });
+    </script>
+  </body>
+</html>
