@@ -1,7 +1,7 @@
 import socket  
 
-HOST = '83.255.245.18'
-PORT = 50000
+HOST = '83.255.192.15'
+PORT = 50001
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
     client_socket.connect((HOST, PORT))
