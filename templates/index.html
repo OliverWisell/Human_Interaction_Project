@@ -1,3 +1,4 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html>
   <head>
@@ -5,9 +6,12 @@
     <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
   </head>
   <body>
+    <h1>Index Page</h1>
+    <p id="choiceDisplay"></p>
     <input id="name" placeholder="Skriv namn" />
     <button onclick="join()">Join</button>
     <ul id="messages"></ul>
+    <button onclick="goBack()">Return to Start</button>
 
     <script>
       const socket = io();
@@ -22,6 +26,16 @@
         li.textContent = data.msg;
         document.getElementById("messages").appendChild(li);
       });
+
+      function goBack() {
+        window.location.href = "/start";
+      }
+
+      // Show the selected choice
+      const choice = sessionStorage.getItem("userChoice");
+      if (choice) {
+        document.getElementById("choiceDisplay").textContent = `You chose: ${choice.toUpperCase()}`;
+      }
     </script>
   </body>
 </html>

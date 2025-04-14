@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Start Screen</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h1>Start Screen</h1>
+    <p>Yes chosen: {{ yes }}</p>
+    <p>No chosen: {{ no }}</p>
+
+    <button onclick="makeChoice('yes')">Yes</button>
+    <button onclick="makeChoice('no')">No</button>
+
+    <script>
+      const socket = io();
+
+      async function makeChoice(choice) {
+        sessionStorage.setItem("userChoice", choice);
+        await fetch('/choice', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({choice: choice})
+        });
+        window.location.href = "/index";
+      }
+    </script>
+  </body>
+</html>
