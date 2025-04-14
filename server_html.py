@@ -6,6 +6,10 @@ from flask_socketio import SocketIO, emit, join_room
 app = Flask(__name__)
 socketio = SocketIO(app)
 
+vote_counter = {
+    "Yes": 0,
+    "No": 0
+}
 clients = {}
 
 @app.route('/')
@@ -27,6 +31,11 @@ def handle_join(data):
 @socketio.on('start')
 def handle_start():
     print("Game started")
+    vote_counter["Yes"] = 0
+    vote_counter["No"] = 0
+    # Broadcasta nollad status till admin
+    emit("vote_update", vote_counter, broadcast=True)
+    # Skicka startmeddelande till alla spelare
     emit('start_question', broadcast=True)
 
 @socketio.on('answer')
@@ -34,7 +43,11 @@ def handle_answer(data):
     name = clients.get(request.sid, 'Unknown')
     choice = data.get('choice')
     print(f"{name} answered: {choice}")
-   
+    
+    if choice in vote_counter:
+        vote_counter[choice] += 1
+        emit('vote_update', vote_counter, broadcast=True)
+    emit('vote_update', vote_counter, broadcast=True)
 
 @socketio.on('disconnect')
 def handle_disconnect():

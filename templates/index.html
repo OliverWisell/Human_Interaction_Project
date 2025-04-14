@@ -11,6 +11,11 @@
       <button onclick="join()">Join</button>
     </div>
 
+    <div id="efterSvar" style="display: none;">
+      <h2>Ditt val är: <span id="dittVal"></span></h2>
+      <p>Väntar på att resterande skall svara</p>
+    </div>
+
     <div id="lobby" style="display: none;">
       <h2>Vänterum</h2>
       <p>Väntar på att admin ska starta spelet...</p>
@@ -19,8 +24,8 @@
     <div id="fråga" style="display: none;">
       <h2>Fråga</h2>
       <p id="question">Fråga kommer här</p>
-      <button onclick="answer('Yes')">Yes</button>
-      <button onclick="answer('No')">No</button>
+      <button id="yesBtn" onclick="answer('Yes')">Yes</button>
+      <button id="noBtn" onclick="answer('No')">No</button>
     </div>
 
     <script>
@@ -38,10 +43,22 @@
         document.getElementById("fråga").style.display = "block";
       });
 
-
+      
       function answer(choice) {
         socket.emit("answer", { choice });
+        document.getElementById("dittVal").textContent = choice;
+        //göm frågevyn
+
+        document.getElementById("yesBtn").disabled = true;
+        document.getElementById("noBtn").disabled = true;
+
+
+        document.getElementById("fråga").style.display = "none";
+        document.getElementById("efterSvar").style.display = "block";
+        document.getElementById("dittVal").textContent = choice;
+
         alert("Svar skickat: " + choice);
+        
       }
     </script>
   </body>

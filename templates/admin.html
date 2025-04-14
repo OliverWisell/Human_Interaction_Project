@@ -8,10 +8,19 @@
   <h2>Adminpanel</h2>
   <p>Antal deltagare: <span id="counter">0</span></p>
   <button onclick="start()">Starta quiz</button>
-
+  <h3>Statistik</h3>
+  <ul>
+    <li>Yes: <span id="yesCount">0</span></li>
+    <li>No: <span id="noCount">0</span></li>
+  </ul>
   <script>
     const socket = io();
     let count = 0;
+
+    socket.on("vote_update", data => {
+      document.getElementById("yesCount").textContent = data.Yes;
+      document.getElementById("noCount").textContent = data.No;
+    });
 
     socket.on("player_joined", data => {
       count++;
