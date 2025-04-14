@@ -28,6 +28,10 @@
       <button id="noBtn" onclick="answer('No')">No</button>
     </div>
 
+    <div id="resultat" style="display:none;">
+      <h2 id="resultText"></h2>
+    </div>
+
     <script>
       const socket = io();
 
@@ -41,6 +45,14 @@
       socket.on("start_question", () => {
         document.getElementById("lobby").style.display = "none";
         document.getElementById("fråga").style.display = "block";
+      });
+
+      socket.on("result", data => {
+        document.getElementById("efterSvar").style.display = "none";
+        document.getElementById("resultat").style.display = "block";
+
+        const text = data.outcome === "win" ? "Du vann!" : "Du förlorade!";
+        document.getElementById("resultText").textContent = text;
       });
 
       
