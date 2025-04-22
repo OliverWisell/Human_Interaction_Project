@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin View</title>
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background-image: url("/static/el_farol.jpg");
+            background-size: cover;
+            font-family: Arial, sans-serif;
+        }
+
+        #admin-label {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(to right, #a8ff78, #ff6868);
+            padding: 10px 40px;
+            border: 4px solid black;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 10px;
+        }
+
+        #vote-plot {
+            position: absolute;
+            top: 80px;
+            left: 50px;
+            width: 400px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #next-button {
+            position: absolute;
+            top: 180px;
+            right: 100px;
+            background-color: #a8ff78;
+            padding: 20px 30px;
+            font-size: 24px;
+            font-weight: bold;
+            border: 2px solid black;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        #vote-buttons {
+            position: absolute;
+            top: 500px;
+            left: 50px;
+        }
+
+        .vote-btn {
+            font-size: 20px;
+            padding: 10px 20px;
+            margin-right: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .yes { background-color: #b3ffb3; }
+        .no  { background-color: #ffb3b3; }
+    </style>
+</head>
+<body>
+
+    <div id="admin-label">Admin</div>
+
+    <div id="vote-plot">
+        <p>Participants: <span id="participant-count">10</span></p>
+        <img id="plot-img" src="data:image/png;base64,{{ plot_data }}" alt="Vote History">
+    </div>
+
+    <button id="next-button">Next round</button>
+
+    <div id="vote-buttons">
+        <button class="vote-btn yes" onclick="castVote(1)">Yes</button>
+        <button class="vote-btn no" onclick="castVote(0)">No</button>
+    </div>
+
+    <script>
+        const socket = io();
+
+        function castVote(vote) {
+            socket.emit('new_vote', vote);
+        }
+
+        socket.on('update_plot', function(data) {
+            document.getElementById('plot-img').src = 'data:image/png;base64,' + data.plot;
+            document.getElementById('participant-count').innerText = data.count;
+        });
+    </script>
+</body>
+</html>

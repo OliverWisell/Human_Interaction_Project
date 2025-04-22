@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Admin Panel</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h1>Admin Dashboard</h1>
+
+    <p>Yes chosen: <span id="yesCount">0</span></p>
+    <p>No chosen: <span id="noCount">0</span></p>
+    <p>Current users online: <span id="userCount">0</span></p>
+
+    <script>
+      const socket = io();
+
+      socket.on('counts', data => {
+        document.getElementById('yesCount').textContent = data.yes;
+        document.getElementById('noCount').textContent = data.no;
+        document.getElementById('userCount').textContent = data.users;
+      });
+
+      socket.on('connect', () => {
+        socket.emit('admin_view');
+      });
+    </script>
+  </body>
+</html>
