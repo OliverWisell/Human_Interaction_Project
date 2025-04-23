@@ -1,8 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Adminvy</title>
+  <title>Adminpanel</title>
   <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: url('/static/AdminView.jpg') no-repeat center center;
+      background-size: cover;
+      margin: 0;
+      padding: 0;
+      color: #000;
+    }
+  </style>
 </head>
 <body>
   <h2>Adminpanel</h2>
@@ -16,42 +27,120 @@
     <li>Yes: <span id="yesCount">0</span></li>
     <li>No: <span id="noCount">0</span></li>
   </ul>
+
+  <h3>Statistikpanel</h3>
+  <label for="user-select">Välj användare eller grupp:</label>
+  <select id="user-select">
+    <option value="group">Visa grupphistorik</option>
+    {% for agent in agents %}
+      <option value="{{ loop.index0 }}">{{ agent.name }}</option>
+    {% endfor %}
+  </select>
+
+  <canvas id="historyChart" width="400" height="200"></canvas>
+
   <script>
     const socket = io();
     let count = 0;
-
-    socket.on("vote_update", data => {
-      const total = data.Yes + data.No
-      document.getElementById("yesCount").textContent = data.Yes;
-      document.getElementById("noCount").textContent = data.No;
-
-      if (total === totalPlayers) {
-        document.getElementById("showResultsBtn").style.display = "block";
-      }
-    });
+    let totalPlayers = 0;
 
     socket.on("player_joined", data => {
       count++;
       document.getElementById("counter").textContent = count;
     });
+    socket.on("update_stats", data => {
+      const userSelect = document.getElementById("user-select");
 
-    let totalPlayers = 0;
+      // Uppdatera agentlistan (rensar och fyller på nytt)
+      userSelect.innerHTML = '<option value="group">Visa grupphistorik</option>';
+      data.agents.forEach((agent, index) => {
+        const opt = document.createElement("option");
+        opt.value = index;
+        opt.textContent = agent.name;
+        userSelect.appendChild(opt);
+      });
+
+      // Uppdatera globalt
+      agents = data.agents;
+      groupResults = data.group_data;
+
+      // Trigga uppdatering av graf (simulerar användarval)
+      userSelect.dispatchEvent(new Event('change'));
+    });
+
+    socket.on("vote_update", data => {
+      const total = data.Yes + data.No;
+      document.getElementById("yesCount").textContent = data.Yes;
+      document.getElementById("noCount").textContent = data.No;
+      if (total === totalPlayers) {
+        document.getElementById("showResultsBtn").style.display = "block";
+      }
+    });
 
     socket.on("num_players", data => {
       totalPlayers = data.count;
     });
+
     function start() {
       socket.emit("start");
     }
+
     function showResults() {
       socket.emit("show_results");
       document.getElementById("showResultsBtn").style.display = "none";
       document.getElementById("nextBtn").style.display = "block";
     }
+
     function nextQuestion() {
-      socket.emit("start"); // Kör samma fråga igen
+      socket.emit("start");
       document.getElementById("nextBtn").style.display = "none";
     }
+
+    // Chart.js data från Jinja
+    let agents = [];
+    let groupResults = [];
+
+    let chart;
+    const ctx = document.getElementById("historyChart").getContext("2d");
+
+    document.getElementById("user-select").addEventListener("change", function () {
+      const idx = this.value;
+      let labels = [], data = [];
+
+      if (idx === "group") {
+        labels = groupResults.map((_, i) => "Runda " + (i + 1));
+        data = groupResults;
+      } else {
+        const user = agents[idx];
+        labels = user.results.map((_, i) => "Runda " + (i + 1));
+        data = user.results;
+      }
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Glädjenivå",
+            data: data,
+            fill: false,
+            borderColor: "blue",
+            tension: 0.2
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              suggestedMax: 1
+            }
+          }
+        }
+      });
+    });
   </script>
 </body>
 </html>

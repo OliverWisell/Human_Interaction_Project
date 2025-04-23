@@ -23,7 +23,10 @@ def index():
 
 @app.route('/admin')
 def admin():
-    return render_template('admin.html')
+    agents_data = [{'name': agent.name, 'results': agent.result} for agent in agent_register.agents]
+    group_data = agent_register.previous_results
+    return render_template('admin.html', agents=agents_data, group_data=group_data)
+
 
 @socketio.on('join')
 def handle_join(data):
@@ -96,26 +99,7 @@ def handle_disconnect():
 
 @socketio.on('show_results')
 def handle_show_results():
-    #total_votes = vote_counter["Yes"] + vote_counter["No"]
-    #if total_votes == 0:
-    #    return
-
-    #yes_percent = vote_counter["Yes"] / total_votes
-
-    #for sid, choice in choices.items():
-    #    if yes_percent > 0.6:
-    #    # Baren var FÖR full (trångt)
-    #       if choice == "Yes":
-    #            outcome = "lose"   # Gick till baren → ångrade sig
-    #        else:
-    #            outcome = "win"    # Stannade hemma → nöjd
-    #    else:
-    #        # Baren var OK
-    #        if choice == "Yes":
-    #            outcome = "win"    # Gick till baren → hade kul
-    #        else:
-    #            outcome = "lose"   # Stannade hemma → FOMO
-    #    socketio.emit("result", {"outcome": outcome}, to=sid)
+    
     crowd_ratio = agent_register.new_result()  # 0–1
 
     for agent in agent_register.agents:
@@ -130,6 +114,11 @@ def handle_show_results():
             outcome = "win" if last == 1 else "lose"
         socketio.emit("result", {"outcome": outcome}, to=agent.user)
     print("Resultat skickat!")
+    agents_data = [{'name': a.name, 'results': a.result} for a in agent_register.agents]
+    group_data = agent_register.previous_results
+    socketio.emit("update_stats", {
+        "agents": agents_data,
+        "group_data": group_data})
 
 if __name__ == '__main__':
     #socketio.run(app, host='0.0.0.0', port=50001, debug=True)
