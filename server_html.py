@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room
+from classes import Stats, Agent  # Assuming classes.py contains the Agent and Stats classes
 
 
 # Flask app with SocketIO for real-time communication
@@ -7,12 +8,13 @@ app = Flask(__name__)
 socketio = SocketIO(app)
 
 clients = {}  
-choices = {}
-vote_counter = {
-    "Yes": 0,
-    "No": 0
-}
-clients = {}
+agent_register = Stats()  # Dictionary to keep track of agents and their names
+#choices = {}
+#vote_counter = {
+#    "Yes": 0,
+#    "No": 0
+#}
+#clients = {}
 question_text = "Kommer du gå till baren denna vecka?"
 
 @app.route('/')
@@ -23,7 +25,6 @@ def index():
 def admin():
     return render_template('admin.html')
 
-num_players = 0
 @socketio.on('join')
 def handle_join(data):
     print("🔥 Fick join på servern!", data)
@@ -31,12 +32,15 @@ def handle_join(data):
     name = data.get('name')
     sid = request.sid
     clients[sid] = name
-    num_players += 1
+
+    agent = Agent(name, user=sid)
+    agent_register.add_agent(agent)
+    
     print(f"{name} joined with sid {sid}")
 
     # Notify client to enter waiting view
     socketio.emit("joined_waiting", to=sid)
-    socketio.emit("num_players", {"count": num_players})
+    socketio.emit("num_players", {"count": agent_register.total})
     # Optionally notify admin or other clients
     socketio.emit("player_joined", {"name": name})
 
@@ -44,14 +48,14 @@ def handle_join(data):
 
 @socketio.on('start')
 def handle_start():
-    global vote_counter, choices
-    choices = {}
-    vote_counter["Yes"] = 0
-    vote_counter["No"] = 0
+    #global vote_counter, choices
+    #choices = {}
+    #vote_counter["Yes"] = 0
+    #vote_counter["No"] = 0
     # Broadcasta nollad status till admin
     # Skicka startmeddelande till alla spelare
     socketio.emit('start_question', {"question": question_text})
-    socketio.emit("vote_update", vote_counter)
+    #socketio.emit("vote_update", vote_counter)
     
 @socketio.on('answer')
 def handle_answer(data):
@@ -60,43 +64,71 @@ def handle_answer(data):
     name = clients.get(sid, 'Unknown')
     print(f"{name} answered: {choice}")
     
-    if sid in choices:
-        return
+    agent = agent_register.search_agent(name)
+    if agent:
+        agent.add_result(1 if choice == "Yes" else 0)
 
-    if choice in vote_counter:
-        vote_counter[choice] += 1
-        choices[sid] = choice
-        socketio.emit('vote_update', vote_counter)
-    socketio.emit('vote_update', vote_counter)
+    # 🧮 Uppdatera räkning
+    yes_count = sum(1 for a in agent_register.agents if a.past_result() == 1)
+    no_count = sum(1 for a in agent_register.agents if a.past_result() == 0)
+
+    socketio.emit("vote_update", {"Yes": yes_count, "No": no_count})
+
+
+    #if sid in choices:
+    #    return
+
+    #if choice in vote_counter:
+    #    vote_counter[choice] += 1
+    #    choices[sid] = choice
+    #    socketio.emit('vote_update', vote_counter)
+    #socketio.emit('vote_update', vote_counter)
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    name = clients.pop(request.sid, 'Okänd')
-    print(f"{name} disconnected")
+    #name = clients.pop(request.sid, 'Okänd')
+    #print(f"{name} disconnected")
+    sid = request.sid
+    name = clients.pop(sid, None)
+    if name:
+        agent_register.delete_agent(name)
+        print(f"{name} disconnected")
 
 @socketio.on('show_results')
 def handle_show_results():
-    total_votes = vote_counter["Yes"] + vote_counter["No"]
-    if total_votes == 0:
-        return
+    #total_votes = vote_counter["Yes"] + vote_counter["No"]
+    #if total_votes == 0:
+    #    return
 
-    yes_percent = vote_counter["Yes"] / total_votes
+    #yes_percent = vote_counter["Yes"] / total_votes
 
-    for sid, choice in choices.items():
-        if yes_percent > 0.6:
-        # Baren var FÖR full (trångt)
-            if choice == "Yes":
-                outcome = "lose"   # Gick till baren → ångrade sig
-            else:
-                outcome = "win"    # Stannade hemma → nöjd
+    #for sid, choice in choices.items():
+    #    if yes_percent > 0.6:
+    #    # Baren var FÖR full (trångt)
+    #       if choice == "Yes":
+    #            outcome = "lose"   # Gick till baren → ångrade sig
+    #        else:
+    #            outcome = "win"    # Stannade hemma → nöjd
+    #    else:
+    #        # Baren var OK
+    #        if choice == "Yes":
+    #            outcome = "win"    # Gick till baren → hade kul
+    #        else:
+    #            outcome = "lose"   # Stannade hemma → FOMO
+    #    socketio.emit("result", {"outcome": outcome}, to=sid)
+    crowd_ratio = agent_register.new_result()  # 0–1
+
+    for agent in agent_register.agents:
+        last = agent.past_result()
+        if last is None:
+            continue
+        if crowd_ratio > 0.6:
+            # För trångt
+            outcome = "lose" if last == 1 else "win"
         else:
-            # Baren var OK
-            if choice == "Yes":
-                outcome = "win"    # Gick till baren → hade kul
-            else:
-                outcome = "lose"   # Stannade hemma → FOMO
-        socketio.emit("result", {"outcome": outcome}, to=sid)
-
+            # OK att gå
+            outcome = "win" if last == 1 else "lose"
+        socketio.emit("result", {"outcome": outcome}, to=agent.user)
     print("Resultat skickat!")
 
 if __name__ == '__main__':
