@@ -4,13 +4,15 @@
   <title>El Farol Night</title>
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-image: url('/static/el_farol_bg.jpg'); /* Ex: el_farol_bg.jpg */
-      background-size: cover;
-      background-position: center;
-      color: #000;
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-image: url('/static/el_farol_bg.jpg');
+        background-size: cover;              /* Skala så hela skärmen täcks */
+        background-repeat: no-repeat;        /* Inga upprepningar */
+        background-position: center center;  /* Centrerad bild */
+        background-attachment: fixed;        /* Bilden stannar vid scroll */
+        color: #000;
     }
 
     .center-box {
