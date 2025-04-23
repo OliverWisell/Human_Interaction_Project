@@ -9,6 +9,7 @@
   <p>Antal deltagare: <span id="counter">0</span></p>
   <button onclick="start()">Starta quiz</button>
   <button id="showResultsBtn" onclick="showResults()" style="display:none;">Visa resultat</button>
+  <button id="nextBtn" onclick="nextQuestion()" style="display:none;">Nästa omgång</button>
 
   <h3>Statistik</h3>
   <ul>
@@ -34,7 +35,6 @@
       document.getElementById("counter").textContent = count;
     });
 
-    num_players = 0
     let totalPlayers = 0;
 
     socket.on("num_players", data => {
@@ -45,6 +45,12 @@
     }
     function showResults() {
       socket.emit("show_results");
+      document.getElementById("showResultsBtn").style.display = "none";
+      document.getElementById("nextBtn").style.display = "block";
+    }
+    function nextQuestion() {
+      socket.emit("start"); // Kör samma fråga igen
+      document.getElementById("nextBtn").style.display = "none";
     }
   </script>
 </body>

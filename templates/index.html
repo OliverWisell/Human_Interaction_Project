@@ -42,9 +42,24 @@
         document.getElementById("lobby").style.display = "block";
       }
 
-      socket.on("start_question", () => {
+      socket.on("start_question", data => {
+        document.getElementById("question").textContent = data.question;
+
+  // Visa rätt vy
+        document.getElementById("resultat").style.display = "none";
+        document.getElementById("efterSvar").style.display = "none";
+        document.getElementById("login").style.display = "none";
         document.getElementById("lobby").style.display = "none";
         document.getElementById("fråga").style.display = "block";
+
+    // Återställ knappar
+        document.getElementById("yesBtn").disabled = false;
+        document.getElementById("noBtn").disabled = false;
+        document.getElementById("yesBtn").style.display = "inline-block";
+        document.getElementById("noBtn").style.display = "inline-block";
+
+    // Rensa eventuell gammal feedback
+        document.getElementById("dittVal").textContent = "";
       });
 
       socket.on("result", data => {

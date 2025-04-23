@@ -13,10 +13,11 @@ vote_counter = {
     "No": 0
 }
 clients = {}
+question_text = "Kommer du gå till baren denna vecka?"
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('el_farol.html')
 
 @app.route('/admin')
 def admin():
@@ -25,25 +26,33 @@ def admin():
 num_players = 0
 @socketio.on('join')
 def handle_join(data):
-    name = data.get('name')
-    clients[request.sid] = name
-    print(f"{name } joined with session ID {request.sid}")
+    print("🔥 Fick join på servern!", data)
     global num_players
+    name = data.get('name')
+    sid = request.sid
+    clients[sid] = name
     num_players += 1
-    emit('player_joined', {'name': name }, broadcast=True)
-    emit("num_players", {"count": num_players}, to=request.sid)
+    print(f"{name} joined with sid {sid}")
+
+    # Notify client to enter waiting view
+    socketio.emit("joined_waiting", to=sid)
+    socketio.emit("num_players", {"count": num_players})
+    # Optionally notify admin or other clients
+    socketio.emit("player_joined", {"name": name})
+
 
 
 @socketio.on('start')
 def handle_start():
-    print("Game started")
+    global vote_counter, choices
+    choices = {}
     vote_counter["Yes"] = 0
     vote_counter["No"] = 0
     # Broadcasta nollad status till admin
-    emit("vote_update", vote_counter, broadcast=True)
     # Skicka startmeddelande till alla spelare
-    emit('start_question', broadcast=True)
-
+    socketio.emit('start_question', {"question": question_text})
+    socketio.emit("vote_update", vote_counter)
+    
 @socketio.on('answer')
 def handle_answer(data):
     choice = data.get('choice')
@@ -57,8 +66,8 @@ def handle_answer(data):
     if choice in vote_counter:
         vote_counter[choice] += 1
         choices[sid] = choice
-        emit('vote_update', vote_counter, broadcast=True)
-    emit('vote_update', vote_counter, broadcast=True)
+        socketio.emit('vote_update', vote_counter)
+    socketio.emit('vote_update', vote_counter)
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -74,12 +83,19 @@ def handle_show_results():
     yes_percent = vote_counter["Yes"] / total_votes
 
     for sid, choice in choices.items():
-        if yes_percent >= 0.6 and choice == "Yes":
-            socketio.emit("result", {"outcome": "win"}, to=sid)
-        elif yes_percent < 0.6 and choice == "No":
-            socketio.emit("result", {"outcome": "win"}, to=sid)
+        if yes_percent > 0.6:
+        # Baren var FÖR full (trångt)
+            if choice == "Yes":
+                outcome = "lose"   # Gick till baren → ångrade sig
+            else:
+                outcome = "win"    # Stannade hemma → nöjd
         else:
-            socketio.emit("result", {"outcome": "lose"}, to=sid)
+            # Baren var OK
+            if choice == "Yes":
+                outcome = "win"    # Gick till baren → hade kul
+            else:
+                outcome = "lose"   # Stannade hemma → FOMO
+        socketio.emit("result", {"outcome": outcome}, to=sid)
 
     print("Resultat skickat!")
 

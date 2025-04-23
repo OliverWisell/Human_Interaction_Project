@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>El Farol Night</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-image: url('/static/el_farol_bg.jpg'); /* Ex: el_farol_bg.jpg */
+      background-size: cover;
+      background-position: center;
+      color: #000;
+    }
+
+    .center-box {
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(to right, #b3ffb3, #ffb3b3);
+      border: 6px solid black;
+      padding: 10px 40px;
+      font-size: 2em;
+      text-align: center;
+      border-radius: 10px;
+    }
+
+    .options {
+      position: absolute;
+      bottom: 20%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 50px;
+    }
+
+    .button {
+      font-size: 1.5em;
+      padding: 20px 30px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    #yesBtn {
+      background-color: #b3ffb3;
+      color: black;
+    }
+
+    #noBtn {
+      background-color: #ffb3b3;
+      color: black;
+    }
+
+    #resultText {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 30px;
+      border: 4px solid #000;
+      font-size: 2em;
+      border-radius: 10px;
+      display: none;
+    }
+    #resultView {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 10;
+        display: none;
+    }
+    .result-happy {
+        background-color: rgba(0, 255, 0, 0.4); /* Grön overlay */
+    }
+
+    .result-unhappy {
+        background-color: rgba(255, 0, 0, 0.4); /* Röd overlay */
+    }
+  </style>
+</head>
+<body>
+    <!-- JOIN VIEW -->
+    <div id="joinView">
+      <div class="center-box">
+        <h2>Välkommen till El Farol!</h2>
+        <input id="nameInput" placeholder="Skriv ditt namn" />
+        <button onclick="join()">Join</button>
+      </div>
+    </div>
+  
+    <!-- WAITING VIEW -->
+    <div id="waitingView" style="display: none;">
+      <div class="center-box">
+        <h2>Väntar på att spelet ska börja...</h2>
+      </div>
+    </div>
+  
+    <!-- QUESTION VIEW -->
+    <div id="questionView" style="display: none;">
+      <div class="center-box">
+        🎉 Kommer du att gå till baren denna vecka?
+      </div>
+  
+      <div class="options" id="choiceButtons">
+        <button class="button" id="yesBtn" onclick="answer('Yes')">💃 YES</button>
+        <button class="button" id="noBtn" onclick="answer('No')">🎥 NO</button>
+      </div>
+    </div>
+  
+    <!-- RESULT VIEW -->
+    <div id="resultView" class="result-view" style="display: none;">
+        <div class="center-box" id="resultText"></div>
+      </div>
+  
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script>
+      const socket = io();
+  
+      function showView(viewId) {
+        const views = ['joinView', 'waitingView', 'questionView', 'resultView'];
+        views.forEach(id => {
+          document.getElementById(id).style.display = (id === viewId ? 'block' : 'none');
+        });
+      }
+  
+      function join() {
+        const name = document.getElementById("nameInput").value;
+        if (!name.trim()) return;
+        console.log("👉 Klickade Join med namn:", name);
+        socket.emit("join", { name });
+      }
+  
+      function answer(choice) {
+        document.getElementById('yesBtn').disabled = true;
+        document.getElementById('noBtn').disabled = true;
+        document.getElementById('choiceButtons').style.display = "none";
+        socket.emit('answer', { choice });
+      }
+  
+      socket.on("joined_waiting", () => {
+        console.log("✅ Mottog joined_waiting från server");
+        showView("waitingView");
+      });
+  
+      socket.on("start_question", data => {
+        showView("questionView");
+        document.getElementById('choiceButtons').style.display = "flex";
+        document.getElementById('yesBtn').disabled = false;
+        document.getElementById('noBtn').disabled = false;
+      });
+  
+      socket.on("result", data => {
+        const resultText = document.getElementById("resultText");
+        const resultView = document.getElementById("resultView");
+
+        resultView.classList.remove("result-happy", "result-unhappy");
+        if (data.outcome === "win") {
+            resultText.textContent = "YOU WERE HAPPY!";
+            resultView.classList.add("result-happy");
+        } else {
+            resultText.textContent = "YOU WERE UNHAPPY!";
+            resultView.classList.add("result-unhappy");
+        }
+
+        resultText.style.display = "block";
+
+        showView("resultView");
+      });
+    </script>
+  </body>
