@@ -15,13 +15,16 @@ class Agent:
 
 class Stats:
     def __init__(self):
+        #Agents info
         self.agents = []
         self.total = 0
         self.going = 0
 
+        #Result info
         self.result = 0
         self.previous_results = []
 
+    #Calculates how many went a certain round and adds it to the previous result list.
     def calc_result(self):
         if self.total > 0:
             self.result = self.going / self.total
@@ -29,7 +32,8 @@ class Stats:
             self.result = 0
         self.previous_results.append(self.result)
 
-    def calculate_result(self):
+    #Runs every time a new result should be calculated
+    def new_result(self):
         self.going = 0
         for agent in self.agents:
             if agent.past_result() == 1:
@@ -42,14 +46,14 @@ class Stats:
         self.agents.append(agent)
         self.total = len(self.agents)
 
-    def find_agent(self, name):
+    def search_agent(self, name):
         for agent in self.agents:
             if agent.name == name:
                 return agent
         return None
 
     def delete_agent(self, name):
-        agent_to_remove = self.find_agent(name)
+        agent_to_remove = self.search_agent(name)
         if agent_to_remove:
             self.agents.remove(agent_to_remove)
             self.total = len(self.agents)
