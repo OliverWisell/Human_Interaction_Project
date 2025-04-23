@@ -44,6 +44,7 @@
       border: none;
       cursor: pointer;
       font-weight: bold;
+      transition: background-color 0.2s ease;
     }
 
     #yesBtn {
@@ -51,9 +52,17 @@
       color: black;
     }
 
+    #yesBtn:hover {
+      background-color: #91e691; /* darker green */
+    }
+
     #noBtn {
       background-color: #ffb3b3;
       color: black;
+    }
+
+    #noBtn:hover {
+      background-color: #ff8080; /* darker red */
     }
 
     #resultText {
@@ -90,8 +99,8 @@
     <!-- JOIN VIEW -->
     <div id="joinView">
       <div class="center-box">
-        <h2>Välkommen till El Farol!</h2>
-        <input id="nameInput" placeholder="Skriv ditt namn" />
+        <h2>Welcome To El Farol!</h2>
+        <input id="nameInput" placeholder="Name" />
         <button onclick="join()">Join</button>
       </div>
     </div>
@@ -99,14 +108,14 @@
     <!-- WAITING VIEW -->
     <div id="waitingView" style="display: none;">
       <div class="center-box">
-        <h2>Väntar på att spelet ska börja...</h2>
+        <h2>Waiting...</h2>
       </div>
     </div>
   
     <!-- QUESTION VIEW -->
     <div id="questionView" style="display: none;">
       <div class="center-box">
-        🎉 Kommer du att gå till baren denna vecka?
+        🎉 Is it an El Farol kind of night?
       </div>
   
       <div class="options" id="choiceButtons">

@@ -5,54 +5,211 @@
   <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: url('/static/AdminView.jpg') no-repeat center center;
-      background-size: cover;
+    html, body {
+      height: 100%;
       margin: 0;
       padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: url('/static/AdminView.jpg') no-repeat center center fixed;
+      background-size: cover;
       color: #000;
     }
+
+    .admin-header {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      text-align: center;
+      background: linear-gradient(to right, #b6f58c, #fda085);
+      border: 4px solid black;
+      border-radius: 12px;
+      font-size: 28px;
+      font-weight: bold;
+      padding: 10px 0;
+    }
+
+    .white-box {
+      position: absolute;
+      top: 180px;
+      left: 80px;
+      width: 800px;
+      height: 600px;
+      background: white;
+      border-radius: 16px;
+      padding: 24px 32px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      justify-content: start;
+      align-items: start;
+    }
+
+
+    .stats {
+      font-size: 18px;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    select {
+      font-size: 16px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 16px;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+      max-height: 350px;
+    }
+
+
+    .button-group {
+      position: absolute;
+      top: 300px;         /* lower down */
+      right: 300px;       /* further from edge */
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+
+    .button-group button {
+      font-size: 1.2em;
+      padding: 14px 20px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      min-width: 180px;
+    }
+
+    #yesBtn {
+      background-color: #b3ffb3;
+      color: black;
+    }
+
+    #yesBtn:hover {
+      background-color: #91e691;
+    }
+
+    #noBtn {
+      background-color: #ffb3b3;
+      color: black;
+    }
+
+    #noBtn:hover {
+      background-color: #ff8080;
+    }
+
+    .button-group button {
+      background-color: #90ee90;
+    }
+
+    .button-group button:hover {
+      background-color: #76d976;
+    }
+
+    .results-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .labels-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap:100px
+    }
+
+    .labels-row p {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+      font-size: 15px;
+    }
+
   </style>
 </head>
 <body>
-  <h2>Adminpanel</h2>
-  <p>Antal deltagare: <span id="counter">0</span></p>
-  <button onclick="start()">Starta quiz</button>
-  <button id="showResultsBtn" onclick="showResults()" style="display:none;">Visa resultat</button>
-  <button id="nextBtn" onclick="nextQuestion()" style="display:none;">Nästa omgång</button>
 
-  <h3>Statistik</h3>
-  <ul>
-    <li>Yes: <span id="yesCount">0</span></li>
-    <li>No: <span id="noCount">0</span></li>
-  </ul>
+  <div class="admin-header">Admin</div>
 
-  <h3>Statistikpanel</h3>
-  <label for="user-select">Välj användare eller grupp:</label>
-  <select id="user-select">
-    <option value="group">Visa grupphistorik</option>
-    {% for agent in agents %}
-      <option value="{{ loop.index0 }}">{{ agent.name }}</option>
-    {% endfor %}
-  </select>
+  <!-- Button area -->
+  <div class="button-group">
+    <button id="toggleRoundBtn" onclick="toggleRound()">Start</button>
+    <button id="nextBtn" onclick="nextQuestion()" style="display:none;">Nästa omgång</button>
+  </div>
 
-  <canvas id="historyChart" width="400" height="200"></canvas>
+  <!-- White box with all statistics and graph -->
+  <div class="white-box">
+    <div class="stats">
+      <p>Amount of users: <span id="counter">0</span></p>
+      <div class="results-container">
+        <div class="labels-row">
+          <p>Results:</p>
+          <p class="total-votes">Total votes: <span id="voteCount">0</span></p>
+        </div>
+        <ul>
+          <li>Yes: <span id="yesCount">0</span></li>
+          <li>No: <span id="noCount">0</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <label for="user-select">Choose user or group:</label>
+    <select id="user-select">
+      <option value="group">Group history</option>
+      {% for agent in agents %}
+        <option value="{{ loop.index0 }}">{{ agent.name }}</option>
+      {% endfor %}
+    </select>
+
+    <canvas id="historyChart"></canvas>
+  </div>
 
   <script>
     const socket = io();
     let count = 0;
     let totalPlayers = 0;
+    let agents = [];
+    let groupResults = [];
+    let chart;
+    const ctx = document.getElementById("historyChart").getContext("2d");
 
     socket.on("player_joined", data => {
       count++;
       document.getElementById("counter").textContent = count;
     });
+
+    socket.on("num_players", data => {
+      totalPlayers = data.count;
+    });
+
+    socket.on("vote_update", data => {
+      const total = data.Yes + data.No;
+      document.getElementById("yesCount").textContent = data.Yes;
+      document.getElementById("noCount").textContent = data.No;
+      document.getElementById("voteCount").textContent = total;
+    });
+
     socket.on("update_stats", data => {
       const userSelect = document.getElementById("user-select");
+      userSelect.innerHTML = '<option value="group">Group history</option>';
 
-      // Uppdatera agentlistan (rensar och fyller på nytt)
-      userSelect.innerHTML = '<option value="group">Visa grupphistorik</option>';
       data.agents.forEach((agent, index) => {
         const opt = document.createElement("option");
         opt.value = index;
@@ -60,26 +217,177 @@
         userSelect.appendChild(opt);
       });
 
-      // Uppdatera globalt
       agents = data.agents;
       groupResults = data.group_data;
-
-      // Trigga uppdatering av graf (simulerar användarval)
       userSelect.dispatchEvent(new Event('change'));
     });
 
-    socket.on("vote_update", data => {
-      const total = data.Yes + data.No;
-      document.getElementById("yesCount").textContent = data.Yes;
-      document.getElementById("noCount").textContent = data.No;
-      if (total === totalPlayers) {
-        document.getElementById("showResultsBtn").style.display = "block";
-      }
+    document.getElementById("user-select").addEventListener("change", function () {
+      const idx = this.value;
+      let labels = [], data = [];
+
+      if (idx === "group") {
+        data = groupResults;
+        renderGroupChart(data);
+      } else {
+      const user = agents[idx]; // ✅ define the user first
+      const data = user.results;
+      renderUserChart(data);
+    }
+
     });
 
-    socket.on("num_players", data => {
-      totalPlayers = data.count;
-    });
+    function renderUserChart(results) {
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: results.map((_, i) => `Round ${i + 1}`),
+      datasets: [{
+        label: 'Choice History',
+        data: results,
+        borderColor: '#000',
+        borderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: {
+          top: 40,
+          bottom: 30,
+          left: 20,
+          right: 20
+        }
+      },
+      scales: {
+        y: {
+          min: -0.1,
+          max: 1.1,
+          ticks: {
+            callback: value =>
+              value === 1 ? 'Went to the bar' :
+              value === 0 ? 'Stayed home' : '',
+            stepSize: 1,
+            padding: 12,
+            font: {
+              size: 16,
+              weight: '600',
+              family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            }
+          },
+          grid: {
+            drawTicks: false
+          }
+        },
+        x: {
+          ticks: {
+            font: {
+              size: 14,
+              family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            }
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      }
+    }
+  });
+}
+
+    function renderGroupChart(results) {
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: results.map((_, i) => `Round ${i + 1}`),
+      datasets: [{
+        label: 'Group "Went to the bar" %',
+        data: results.map(r => r * 100),
+        borderColor: '#007acc',
+        borderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: {
+          top: 40,
+          bottom: 30,
+          left: 20,
+          right: 20
+        }
+      },
+      scales: {
+        y: {
+          min: 0,
+          max: 100,
+          ticks: {
+            callback: value => `${value}%`,
+            stepSize: 20,
+            padding: 12,
+            font: {
+              size: 16,
+              weight: '600',
+              family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            }
+          },
+          grid: {
+            drawTicks: false
+          }
+        },
+        x: {
+          ticks: {
+            font: {
+              size: 14,
+              family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            }
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            font: {
+              size: 14,
+              weight: '600',
+              family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            },
+            padding: 20
+          }
+        }
+      }
+    }
+  });
+}
+
+    let isRoundActive = false;
+    function toggleRound() {
+      const button = document.getElementById("toggleRoundBtn");
+      if (!isRoundActive) {
+        // Start round
+        socket.emit("start");
+        button.textContent = "End Round";
+        isRoundActive = true;
+      } else {
+        // End round
+        socket.emit("show_results");
+        button.textContent = "Start";
+        isRoundActive = false;
+      }
+    }
 
     function start() {
       socket.emit("start");
@@ -95,52 +403,7 @@
       socket.emit("start");
       document.getElementById("nextBtn").style.display = "none";
     }
-
-    // Chart.js data från Jinja
-    let agents = [];
-    let groupResults = [];
-
-    let chart;
-    const ctx = document.getElementById("historyChart").getContext("2d");
-
-    document.getElementById("user-select").addEventListener("change", function () {
-      const idx = this.value;
-      let labels = [], data = [];
-
-      if (idx === "group") {
-        labels = groupResults.map((_, i) => "Runda " + (i + 1));
-        data = groupResults;
-      } else {
-        const user = agents[idx];
-        labels = user.results.map((_, i) => "Runda " + (i + 1));
-        data = user.results;
-      }
-
-      if (chart) chart.destroy();
-
-      chart = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: labels,
-          datasets: [{
-            label: "Glädjenivå",
-            data: data,
-            fill: false,
-            borderColor: "blue",
-            tension: 0.2
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              suggestedMax: 1
-            }
-          }
-        }
-      });
-    });
   </script>
+
 </body>
 </html>

@@ -23,7 +23,7 @@ def index():
 
 @app.route('/admin')
 def admin():
-    agents_data = [{'name': agent.name, 'results': agent.result} for agent in agent_register.agents]
+    agents_data = [{'id': agent.name, 'user': agent.user, 'results': agent.result} for agent in agent_register.agents]
     group_data = agent_register.previous_results
     return render_template('admin.html', agents=agents_data, group_data=group_data)
 
@@ -114,7 +114,7 @@ def handle_show_results():
             outcome = "win" if last == 1 else "lose"
         socketio.emit("result", {"outcome": outcome}, to=agent.user)
     print("Resultat skickat!")
-    agents_data = [{'name': a.name, 'results': a.result} for a in agent_register.agents]
+    agents_data = [{'name': a.name, 'user': a.user, 'results': a.result} for a in agent_register.agents]
     group_data = agent_register.previous_results
     socketio.emit("update_stats", {
         "agents": agents_data,
