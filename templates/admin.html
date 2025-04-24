@@ -49,13 +49,16 @@
 
     .stats {
       font-size: 18px;
+      margin-left: 50px;
+      margin-bottom: 10px;
     }
 
     label {
       font-weight: bold;
       font-size: 18px;
       margin-bottom: 0px;
-      margin-top: 20px; /* Add margin to move it down */
+      margin-top: 10px; /* Add margin to move it down */
+      margin-left: 50px;
     }
 
     select {
@@ -63,14 +66,15 @@
       padding: 6px 12px;
       border-radius: 8px;
       border: 1px solid #ccc;
-      margin-bottom: 0px;
+      margin-bottom: -15px;
       margin-top: 20px; /* Add margin to move it down */
+      margin-left: 50px;
     }
 
     canvas {
       width: 100% !important;
       height: auto !important;
-      max-height: 500px;
+      max-height: 470px;
     }
 
 
@@ -144,6 +148,26 @@
       font-size: 15px;
     }
 
+    hr.separator {
+      border: none;
+      border-top: 1px solid #ccc; /* Thin grey line */
+      margin: 20px 0; /* Adjust spacing as needed */
+    }
+
+    .separator {
+      width: 100%;
+      height: 1px;
+      background-color: #ccc; /* Thin grey line */
+      margin: 20px 0; /* Adjust spacing as needed */
+    }
+
+    .vote-counts {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 16px;
+    }
+
   </style>
 </head>
 <body>
@@ -159,22 +183,25 @@
   <!-- White box with all statistics and graph -->
   <div class="white-box">
     <div class="stats">
-      <p>Amount of users: <span id="counter">0</span></p>
+      <p>Number of users: <span id="counter">0</span></p>
       <div class="results-container">
         <div class="labels-row">
           <p>Results:</p>
           <p class="total-votes">Total votes: <span id="voteCount">0</span></p>
         </div>
-        <ul>
-          <li>Yes: <span id="yesCount">0</span></li>
-          <li>No: <span id="noCount">0</span></li>
-        </ul>
+        <div class="vote-counts">
+          <div>Yes: <span id="yesCount">0</span></div>
+          <div>No: <span id="noCount">0</span></div>
+        </div>
+        
       </div>
     </div>
 
-    <label for="user-select">Choose user or group:</label>
+    <hr class="separator">
+
+    <label for="user-select">History:</label>
     <select id="user-select">
-      <option value="group">Group history</option>
+      <option value="group">Group</option>
       {% for agent in agents %}
         <option value="{{ loop.index0 }}">{{ agent.name }}</option>
       {% endfor %}
@@ -210,7 +237,7 @@
 
     socket.on("update_stats", data => {
       const userSelect = document.getElementById("user-select");
-      userSelect.innerHTML = '<option value="group">Group history</option>';
+      userSelect.innerHTML = '<option value="group">Group</option>';
 
       data.agents.forEach((agent, index) => {
         const opt = document.createElement("option");
@@ -240,140 +267,145 @@
     });
 
     function renderUserChart(results) {
-  if (chart) chart.destroy();
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: results.map((_, i) => `Round ${i + 1}`),
-      datasets: [{
-        label: 'Choice History',
-        data: results,
-        borderColor: '#000',
-        borderWidth: 3,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        fill: false
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 40,
-          bottom: 30,
-          left: 20,
-          right: 20
-        }
-      },
-      scales: {
-        y: {
-          min: -0.1,
-          max: 1.1,
-          ticks: {
-            callback: value =>
-              value === 1 ? 'Went to the bar' :
-              value === 0 ? 'Stayed home' : '',
-            stepSize: 1,
-            padding: 12,
-            font: {
-              size: 16,
-              weight: '600',
-              family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: results.map((_, i) => `Round ${i + 1}`),
+          datasets: [{
+            label: 'Choice History',
+            data: results,
+            borderColor: '#000',
+            borderWidth: 3,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: {
+              top: 40,
+              bottom: 30,
+              left: 20,
+              right: 20
             }
           },
-          grid: {
-            drawTicks: false
-          }
-        },
-        x: {
-          ticks: {
-            font: {
-              size: 14,
-              family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+          scales: {
+            y: {
+              min: -0.1,
+              max: 1.1,
+              ticks: {
+                callback: value =>
+                  value === 1 ? 'Went to the bar' :
+                  value === 0 ? 'Stayed home' : '',
+                stepSize: 1,
+                padding: 12,
+                font: {
+                  size: 16,
+                  weight: '600',
+                  family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                }
+              },
+              grid: {
+                drawTicks: false
+              }
+            },
+            x: {
+              ticks: {
+                font: {
+                  size: 14,
+                  family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: false
             }
           }
         }
-      },
-      plugins: {
-        legend: {
-          display: false
-        }
-      }
+      });
     }
-  });
-}
 
     function renderGroupChart(results) {
-  if (chart) chart.destroy();
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: results.map((_, i) => `Round ${i + 1}`),
-      datasets: [{
-        label: 'Group "Went to the bar" %',
-        data: results.map(r => r * 100),
-        borderColor: '#007acc',
-        borderWidth: 3,
-        pointRadius: 5,
-        pointHoverRadius: 7,
-        fill: false
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      layout: {
-        padding: {
-          top: 40,
-          bottom: 30,
-          left: 20,
-          right: 20
-        }
-      },
-      scales: {
-        y: {
-          min: 0,
-          max: 100,
-          ticks: {
-            callback: value => `${value}%`,
-            stepSize: 20,
-            padding: 12,
-            font: {
-              size: 16,
-              weight: '600',
-              family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: results.map((_, i) => `Round ${i + 1}`),
+          datasets: [{
+            label: 'Group "Went to the bar" %',
+            data: results.map(r => r * 100),
+            borderColor: '#007acc',
+            borderWidth: 3,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: {
+              top: 40,
+              bottom: 30,
+              left: 20,
+              right: 20
             }
           },
-          grid: {
-            drawTicks: false
-          }
-        },
-        x: {
-          ticks: {
-            font: {
-              size: 14,
-              family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+          scales: {
+            y: {
+              min: -10,
+              max: 110,
+              ticks: {
+                callback: value => {
+                if (value > -0.5 && value < 100.5) {
+                  return `${value}%`;
+                }
+                return '';
+                },
+                stepSize: 10,
+                padding: 12,
+                font: {
+                  size: 16,
+                  weight: '600',
+                  family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                }
+              },
+              grid: {
+                drawTicks: false
+              }
+            },
+            x: {
+              ticks: {
+                font: {
+                  size: 14,
+                  family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true,
+              labels: {
+                font: {
+                  size: 14,
+                  weight: '600',
+                  family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                },
+                padding: 20
+              }
             }
           }
         }
-      },
-      plugins: {
-        legend: {
-          display: true,
-          labels: {
-            font: {
-              size: 14,
-              weight: '600',
-              family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-            },
-            padding: 20
-          }
-        }
-      }
+      });
     }
-  });
-}
 
     let isRoundActive = false;
     function toggleRound() {
@@ -381,12 +413,17 @@
       if (!isRoundActive) {
         // Start round
         socket.emit("start");
+
+        document.getElementById("voteCount").textContent = 0;
+        document.getElementById("yesCount").textContent = 0;
+        document.getElementById("noCount").textContent = 0;
+
         button.textContent = "End Round";
         isRoundActive = true;
       } else {
         // End round
         socket.emit("show_results");
-        button.textContent = "Start";
+        button.textContent = "Next Round";
         isRoundActive = false;
       }
     }
