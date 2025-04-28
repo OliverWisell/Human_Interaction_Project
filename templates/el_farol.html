@@ -158,7 +158,11 @@
         console.log("✅ Mottog joined_waiting från server");
         showView("waitingView");
       });
-  
+      
+      socket.on("back_to_waiting", () => {
+        console.log("⏳ Did not vote, going back to waiting...");
+        showView("waitingView");
+      });
       socket.on("start_question", data => {
         showView("questionView");
         document.getElementById('choiceButtons').style.display = "flex";

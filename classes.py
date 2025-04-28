@@ -2,7 +2,7 @@ class Agent:
     def __init__(self, name, user):
         self.user = user
         self.name = name
-        self.current_result = -1
+        self.current_result = None
         self.result = []
 
     def add_result(self, round_result):
@@ -15,7 +15,7 @@ class Agent:
         return None
     
     def reset(self):
-        self.current_result = -1
+        self.current_result = None
 
 
 class Stats:
