@@ -57,6 +57,7 @@ def handle_start():
     #vote_counter["No"] = 0
     # Broadcasta nollad status till admin
     # Skicka startmeddelande till alla spelare
+    agent_register.reset_agents()
     socketio.emit('start_question', {"question": question_text})
     #socketio.emit("vote_update", vote_counter)
     
