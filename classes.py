@@ -2,6 +2,7 @@ class Agent:
     def __init__(self, name, user):
         self.user = user
         self.name = name
+        self.current_result = -1
         self.result = []
 
     def add_result(self, round_result):
@@ -11,13 +12,16 @@ class Agent:
         if self.result:
             return self.result[-1]
         return None
+    
+    def reset(self):
+        self.result = -1
 
 
 class Stats:
     def __init__(self):
         #Agents info
         self.agents = []
-        self.total = 0
+        self.total_agents = 0
         self.going = 0
 
         #Result info
@@ -25,9 +29,9 @@ class Stats:
         self.previous_results = []
 
     #Calculates how many went a certain round and adds it to the previous result list.
-    def calc_result(self):
-        if self.total > 0:
-            self.result = self.going / self.total
+    def calc_result(self, total):
+        if self.total_agents > 0:
+            self.result = self.going / total
         else:
             self.result = 0
         self.previous_results.append(self.result)
@@ -35,16 +39,20 @@ class Stats:
     #Runs every time a new result should be calculated
     def new_result(self):
         self.going = 0
+        total = 0
         for agent in self.agents:
             if agent.past_result() == 1:
                 self.going += 1
-        self.total = len(self.agents)
-        self.calc_result()
+                total += 1
+            elif agent.past_result() == 0:
+                total += 1
+        self.total_agents = len(self.agents)
+        self.calc_result(total)
         return self.result
 
     def add_agent(self, agent):
         self.agents.append(agent)
-        self.total = len(self.agents)
+        self.total_agents = len(self.agents)
 
     def search_agent(self, name):
         for agent in self.agents:
@@ -56,5 +64,9 @@ class Stats:
         agent_to_remove = self.search_agent(name)
         if agent_to_remove:
             self.agents.remove(agent_to_remove)
-            self.total = len(self.agents)
+            self.total_agents = len(self.agents)
         del agent_to_remove
+
+    def reset_round(self):
+        for agent in self.agents:
+            agent.reset()
