@@ -57,6 +57,7 @@ def handle_start():
     #vote_counter["No"] = 0
     # Broadcasta nollad status till admin
     # Skicka startmeddelande till alla spelare
+    agent_register.reset_agents()
     socketio.emit('start_question', {"question": question_text})
     #socketio.emit("vote_update", vote_counter)
     
@@ -99,12 +100,12 @@ def handle_disconnect():
 
 @socketio.on('show_results')
 def handle_show_results():
-    
     crowd_ratio = agent_register.new_result()  # 0–1
 
     for agent in agent_register.agents:
         last = agent.past_result()
         if last is None:
+            socketio.emit("back_to_waiting", {}, to=agent.user)
             continue
         if crowd_ratio > 0.6:
             # För trångt
@@ -112,13 +113,16 @@ def handle_show_results():
         else:
             # OK att gå
             outcome = "win" if last == 1 else "lose"
+        
         socketio.emit("result", {"outcome": outcome}, to=agent.user)
+    
     print("Resultat skickat!")
     agents_data = [{'name': a.name, 'user': a.user, 'results': a.result} for a in agent_register.agents]
     group_data = agent_register.previous_results
     socketio.emit("update_stats", {
         "agents": agents_data,
         "group_data": group_data})
+    
 
 if __name__ == '__main__':
     #socketio.run(app, host='0.0.0.0', port=50001, debug=True)
